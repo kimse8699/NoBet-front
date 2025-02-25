@@ -3,7 +3,7 @@
   "name": "NoBet",
   "version": "1.0",
   "description": "AI 기반 도박 사이트 차단 크롬 익스텐션",
-  "permissions": ["storage", "tabs", "scripting", "webNavigation"],
+  "permissions": ["storage", "tabs", "scripting", "webNavigation", "cookie"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js",
