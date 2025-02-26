@@ -7,11 +7,11 @@ const TOGGLE_STORAGE_KEY = "isBlocked"; // ✅ LocalStorage 키
 export default function ToggleButton({ isBlocked, setIsBlocked }) {
   // ✅ 저장된 토글 상태를 불러오는 함수
   useEffect(() => {
-    chrome.storage.local.get([TOGGLE_STORAGE_KEY], (result) => {
-      if (result[TOGGLE_STORAGE_KEY] !== undefined) {
-        setIsBlocked(result[TOGGLE_STORAGE_KEY]); // ✅ 저장된 상태 복원
-      }
-    });
+    // chrome.storage.local.get([TOGGLE_STORAGE_KEY], (result) => {
+    //   if (result[TOGGLE_STORAGE_KEY] !== undefined) {
+    //     setIsBlocked(result[TOGGLE_STORAGE_KEY]); // ✅ 저장된 상태 복원
+    //   }
+    // });
   }, []);
 
   // ✅ 토글 버튼 클릭 시 실행되는 함수

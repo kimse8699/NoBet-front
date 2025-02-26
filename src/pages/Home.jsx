@@ -6,35 +6,37 @@ import { useCookieManager } from "../customHook/useCookieManager";
 
 function Home() {
   const { getCookies, setCookies, removeCookies } = useCookieManager();
+
   const findUser = async () => {
     try {
-        const cookies = await getCookies(); // ✅ 비동기적으로 쿠키 가져오기
-        const localAccessToken = cookies.accessToken;
+      const cookies = await getCookies();
+      const localAccessToken = cookies.accessToken;
 
-        if (!localAccessToken) {
-            console.warn("❌ AccessToken이 없습니다. 로그인 필요.");
-            return;
+      if (!localAccessToken) {
+        console.warn("❌ AccessToken이 없습니다. 로그인 필요.");
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/auth/user`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localAccessToken}`
         }
+      });
 
-        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/auth/user`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localAccessToken}`
-            }
-        });
+      if (!response.ok) {
+        throw new Error("사용자 정보를 가져오는데 실패했습니다.");
+      }
 
-        if (!response.ok) {
-            throw new Error("사용자 정보를 가져오는데 실패했습니다.");
-        }
-
-        const data = await response.json();
-        console.log("✅ 사용자 정보:", data);
+      const data = await response.json();
+      console.log("✅ 사용자 정보:", data);
     } catch (error) {
-        console.error("❌ 사용자 정보 조회 오류:", error);
+      console.error("❌ 사용자 정보 조회 오류:", error);
     }
-};
-  useEffect(()=>{
+  };
+
+  useEffect(() => {
     findUser();
   }, []);
 
@@ -48,31 +50,42 @@ function Home() {
         setIsBlocked(result.isBlocked);
       }
       if (result.blockCount !== undefined) {
-        setBlockCount(result.blockCount); // 차단 횟수도 불러오기
+        setBlockCount(result.blockCount);
       }
     });
-    chrome.storage.onChanged.addListener((changes) => {
+
+    const handleStorageChange = (changes) => {
       if (changes.blockCount) {
         setBlockCount(changes.blockCount.newValue);
       }
-    });
+    };
 
+    // ✅ `blockCount` 변경 감지 리스너 등록
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    const handleMessage = (message, sender, sendResponse) => {
+      if (message.type === "UPDATE_BLOCK_COUNT") {
+          console.log("📩 메시지 수신:", message);
+          setBlockCount(message.playload.count);
+          sendResponse({ status: "✅ blockCount 업데이트 완료" }); // 응답을 반환
+      }
+    };
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    // ✅ 클린업 함수: 컴포넌트 언마운트 시 리스너 제거
     return () => {
-      chrome.storage.onChanged.removeListener();
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+      chrome.runtime.onMessage.removeListener(handleMessage);
     };
   }, []);
-
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.blockCount) {
-      setBlockCount(changes.blockCount.newValue);
-    }
-  });
 
   // ✅ 토글 상태가 변경될 때 차단 횟수를 0으로 초기화
   useEffect(() => {
     if (!isBlocked) {
-      setBlockCount(0);
-      chrome.storage.local.set({ blockCount: 0 }); // 크롬 스토리지에서도 초기화
+      setTimeout(() => {
+        setBlockCount(0);
+        chrome.storage.local.set({ blockCount: 0 });
+      }, 100); // ✅ 100ms 지연으로 무한 루프 방지
     }
   }, [isBlocked]);
 
@@ -86,7 +99,7 @@ function Home() {
         <p className="blocked-total-count">총 차단됨 : {blockCount}</p>
         <ToggleButton isBlocked={isBlocked} setIsBlocked={setIsBlocked} />
       </div>
-      <ButtonGroup></ButtonGroup>
+      <ButtonGroup />
     </div>
   );
 }
