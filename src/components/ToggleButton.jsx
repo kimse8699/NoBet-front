@@ -21,7 +21,12 @@ export default function ToggleButton({ isBlocked, setIsBlocked }) {
 
     const newBlockedState = !isBlocked; // ✅ 상태 변경
     setIsBlocked(newBlockedState); // ✅ UI 업데이트
-    chrome.storage.local.set({ [TOGGLE_STORAGE_KEY]: newBlockedState }); // ✅ 상태 저장
+    chrome.storage.local.set({ [TOGGLE_STORAGE_KEY]: newBlockedState }, () => {
+      if (!newBlockedState) {
+        // ✅ 차단 비활성화 시 차단 횟수 초기화
+        chrome.storage.local.set({ blockCount: 0 });
+      }
+    });
   };
 
   return (
