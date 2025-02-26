@@ -6,23 +6,35 @@ import { useCookieManager } from "../customHook/useCookieManager";
 
 function Home() {
   const { getCookies, setCookies, removeCookies } = useCookieManager();
-
   const findUser = async () => {
-    const localAccesstoken = getCookies().accessToken;
-    const response = await fetch(
-      `${import.meta.env.VITE_SERVER_URL}/auth/user`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localAccesstoken}`,
-        },
-      }
-    );
-    console.log(await response.json());
-  };
+    try {
+        const cookies = await getCookies(); // ✅ 비동기적으로 쿠키 가져오기
+        const localAccessToken = cookies.accessToken;
 
-  useEffect(() => {
+        if (!localAccessToken) {
+            console.warn("❌ AccessToken이 없습니다. 로그인 필요.");
+            return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/auth/user`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localAccessToken}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("사용자 정보를 가져오는데 실패했습니다.");
+        }
+
+        const data = await response.json();
+        console.log("✅ 사용자 정보:", data);
+    } catch (error) {
+        console.error("❌ 사용자 정보 조회 오류:", error);
+    }
+};
+  useEffect(()=>{
     findUser();
   }, []);
 

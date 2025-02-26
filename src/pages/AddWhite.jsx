@@ -13,7 +13,7 @@ function AddWhite() {
   };
 
   async function refreshAccessToken() {
-    const refreshToken = getCookies().refreshToken;
+    const refreshToken = await getCookies().refreshToken;
     if (!refreshToken) return removeCookies("accessToken"), removeCookies("refreshToken");
     const localAccessToken = cookies.accessToken;
 
@@ -32,7 +32,7 @@ function AddWhite() {
     setCookies("refreshToken", newRefreshToken);
   }
   const fetchWhiteList = async () => {
-    const cookies = getCookies();
+    const cookies = await getCookies();
     const localAccessToken = cookies.accessToken;
     if (!localAccessToken) {
         console.warn("AccessToken이 존재하지 않습니다.");
@@ -81,7 +81,7 @@ function AddWhite() {
           return;
       }
     
-      const cookies = getCookies();
+      const cookies = await getCookies();
       const localAccessToken = cookies.accessToken;
       if (!localAccessToken) {
           console.warn("AccessToken이 존재하지 않습니다.");
@@ -117,10 +117,35 @@ function AddWhite() {
   };
 
   // 🔹 목록에서 제거
-  const handleRemove = (index) => {
-    const newWhitelist = whitelist.filter((_, i) => i !== index);
-    setWhitelist(newWhitelist);
-  };
+  const handleRemove = async (index) => {
+    const siteToRemove = whitelist[index];
+
+    const cookies = await getCookies();
+    const localAccessToken = cookies.accessToken;
+    if (!localAccessToken) {
+        console.warn("AccessToken이 존재하지 않습니다.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/whiteUrls/deleteWhiteUrls`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localAccessToken}`
+            },
+            body: JSON.stringify({ whiteUrl: siteToRemove }) // ✅ JSON 객체로 감싸서 보냄
+        });
+
+        if (!response.ok) throw new Error("화이트 리스트 삭제 실패");
+
+        // ✅ 성공 시 상태 업데이트
+        setWhitelist(whitelist.filter((_, i) => i !== index));
+    } catch (error) {
+        console.error("화이트 리스트 삭제 오류:", error);
+    }
+};
+
 
   useEffect(() => {
     fetchWhiteList();

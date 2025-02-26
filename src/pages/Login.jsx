@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import "../pages_styles/Login.css"; // ✅ 스타일 적용
 import loginIcon from "../assets/login-icon.png"; // ✅ 아이콘 추가
 import KakaoLogo from "../assets/kakao-logo.png";
@@ -10,23 +10,35 @@ const kakaoURL = `${import.meta.env.VITE_SERVER_URL}/oauth2/authorization/kakao`
 export default function Login() {
   const { getCookies, removeCookies } = useCookieManager();
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ 현재 로그인 상태 확인 (쿠키에서 accessToken 가져오기)
-  const cookies = getCookies();
-  const isLoggedIn = !!cookies.accessToken; // `accessToken`이 있으면 true, 없으면 false
+  useEffect(() => {
+      const checkLoginStatus = async () => {
+          const cookies = await getCookies(); // ✅ 비동기적으로 쿠키 가져오기
+          if (cookies && cookies.accessToken) {
+              console.log("✅ 로그인 상태 확인됨:", cookies.accessToken);
+              setIsLoggedIn(true);
+          } else {
+              console.warn("❌ 로그인되지 않음");
+              setIsLoggedIn(false);
+          }
+      };
 
-  // ✅ 로그인 버튼 클릭 (팝업 창에서 로그인)
+      checkLoginStatus();
+  }, []);
+
+  // ✅ 로그인 버튼 클릭 (카카오 로그인 페이지 이동)
   const handleLogin = (e) => {
-    e.preventDefault();
-
-    console.log(kakaoURL);
-    window.location.href = kakaoURL; // ✅ 카카오 로그인 페이지로 이동
+      e.preventDefault();
+      console.log(kakaoURL);
+      window.location.href = kakaoURL;
   };
 
-  // ✅ 로그아웃 버튼 클릭 (쿠키 삭제)
+  // ✅ 로그아웃 버튼 클릭 (쿠키 삭제 후 로그인 페이지 이동)
   const handleLogout = () => {
-    removeCookies(); // ✅ 쿠키 삭제
-    navigate("/login"); // ✅ 로그아웃 후 로그인 페이지로 이동
+      removeCookies();
+      setIsLoggedIn(false); // ✅ 상태 업데이트
+      navigate("/login");
   };
 
   return (
